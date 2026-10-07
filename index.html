@@ -141,7 +141,7 @@ footer a{color:var(--teal)}
       <p>Isi nama, NIK, status, dan gaji kotor bulanan. Potongan pajak per bulan, hitungan Desember, dan gaji bersih langsung muncul.</p>
       </div>
     </div>
-    <span class="reg">Dasar: PP 58/2023 · PMK 168/2023 · UU HPP</span>
+    <span class="reg">Dasar: PP 58/2023 · PMK 168/2023 · PMK 81/2024 · UU HPP</span>
   </header>
 
   <div class="grid">
@@ -353,7 +353,17 @@ function run(focus=true){
           <tr class="total"><td>PPh 21 Desember</td><td>${rpS(r.des)}</td></tr>
         </tbody></table>
       </div>
-      <p class="note">Total PPh 21 setahun: <b class="num">${rp(r.setahun)}</b> (sekitar ${pct(r.bruto? r.setahun/r.bruto:0)} dari penghasilan bruto). Pajak ini dipotong dan disetor oleh perusahaan/badan pemberi kerja, lalu dicantumkan di bukti potong 1721-A1.</p>
+      <div><h3>Penyetoran</h3>
+        <table class="steps"><tbody>
+          <tr><td>Yang menyetor</td><td>Pemberi kerja</td></tr>
+          <tr><td>Disetor per bulan (Jan–Nov) · Desember</td><td>${rp(r.terBulan)} · ${rp(Math.max(0,r.des))}</td></tr>
+          <tr><td>KAP-KJS di kode billing</td><td>411121-100</td></tr>
+          <tr><td>Setor paling lambat</td><td>tgl 15 bulan berikutnya</td></tr>
+          <tr><td>Lapor SPT Masa PPh 21/26</td><td>tgl 20 bulan berikutnya</td></tr>
+          <tr class="total"><td>Total disetor setahun</td><td>${rp(r.setahun)}</td></tr>
+        </tbody></table>
+        <p class="note" style="margin-top:8px">Setor ke kas negara memakai kode billing dari Coretax DJP (coretaxdjp.pajak.go.id → Pembayaran → Layanan Mandiri Kode Billing), dibayar lewat bank/pos persepsi, mobile banking, atau Deposit Pajak. Bukti potong: BPMP (Jan–Nov) dan BPA1 (Desember). Jadwal lengkap per bulan ada di lampiran PDF.</p>
+      </div>
       <div class="btns"><button class="primary" type="button" id="addRow">Tambahkan ke daftar</button><button class="ghost" type="button" id="pdfOne">Unduh lampiran PDF</button><button class="ghost" type="button" id="copyOne">Salin ringkasan</button></div><p class="note" id="pdfMsg" role="status"></p>`;
   } else {
     const r = calcBukan(v.gaji);
@@ -374,6 +384,16 @@ function run(focus=true){
           <tr class="total"><td>PPh 21 terutang</td><td>${rp(r.tax)}</td></tr>
         </tbody></table>
       </div>
+      <div><h3>Penyetoran</h3>
+        <table class="steps"><tbody>
+          <tr><td>Yang menyetor</td><td>Pemberi honor</td></tr>
+          <tr><td>Jumlah disetor</td><td>${rp(r.tax)}</td></tr>
+          <tr><td>KAP-KJS di kode billing</td><td>411121-100</td></tr>
+          <tr><td>Setor paling lambat</td><td>tgl 15 bulan berikutnya</td></tr>
+          <tr><td>Lapor SPT Masa PPh 21/26</td><td>tgl 20 bulan berikutnya</td></tr>
+        </tbody></table>
+        <p class="note" style="margin-top:8px">Kode billing dibuat di Coretax DJP lalu dibayar lewat bank/pos persepsi, mobile banking, atau Deposit Pajak. Penerima mendapat bukti potong BP21.</p>
+      </div>
       <p class="note">Berlaku untuk bukan pegawai seperti narasumber, konsultan, tenaga ahli, atau freelancer (PMK 168/2023). Dihitung per pembayaran dan tidak diakumulasi antar bulan. Tidak memakai PTKP; kelebihan dapat diperhitungkan di SPT Tahunan.</p>
       <div class="btns"><button class="primary" type="button" id="addRow">Tambahkan ke daftar</button><button class="ghost" type="button" id="pdfOne">Unduh lampiran PDF</button><button class="ghost" type="button" id="copyOne">Salin ringkasan</button></div><p class="note" id="pdfMsg" role="status"></p>`;
   }
@@ -386,8 +406,8 @@ function run(focus=true){
 function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
 function summary(x){
   if (!x) return '';
-  if (x.mode==='pegawai') return `Perhitungan PPh 21 — ${x.nama} (NIK ${maskNik(x.nik)})\nStatus ${x.status}, TER kategori ${x.r.cat}\nGaji kotor/bulan: ${rp(x.gaji)}\nPPh 21 Jan–Nov: ${rp(x.r.terBulan)}/bulan (TER ${pct(x.r.rate)})\nPPh 21 Desember: ${rpS(x.r.des)}\nPPh 21 setahun: ${rp(x.r.setahun)}\nGaji bersih/bulan: ${rp(x.r.thpBulan)}`;
-  return `Perhitungan PPh 21 bukan pegawai — ${x.nama} (NIK ${maskNik(x.nik)})\nBruto: ${rp(x.gaji)}\nPPh 21: ${rp(x.r.tax)} (50% × bruto × tarif Pasal 17)\nDiterima bersih: ${rp(x.r.net)}`;
+  if (x.mode==='pegawai') return `Perhitungan PPh 21 — ${x.nama} (NIK ${maskNik(x.nik)})\nStatus ${x.status}, TER kategori ${x.r.cat}\nGaji kotor/bulan: ${rp(x.gaji)}\nPPh 21 Jan–Nov: ${rp(x.r.terBulan)}/bulan (TER ${pct(x.r.rate)})\nPPh 21 Desember: ${rpS(x.r.des)}\nPPh 21 setahun: ${rp(x.r.setahun)}\nGaji bersih/bulan: ${rp(x.r.thpBulan)}\nDisetor pemberi kerja: KAP-KJS 411121-100, paling lambat tgl 15 bulan berikutnya (kode billing Coretax DJP)`;
+  return `Perhitungan PPh 21 bukan pegawai — ${x.nama} (NIK ${maskNik(x.nik)})\nBruto: ${rp(x.gaji)}\nPPh 21: ${rp(x.r.tax)} (50% × bruto × tarif Pasal 17)\nDiterima bersih: ${rp(x.r.net)}\nDisetor pemberi honor: KAP-KJS 411121-100, paling lambat tgl 15 bulan berikutnya`;
 }
 function copy(text, btn){
   const done=()=>{ const t=btn.textContent; btn.textContent='Tersalin'; setTimeout(()=>btn.textContent=t,1500); };
@@ -430,6 +450,11 @@ $('contoh').addEventListener('click',()=>{
 });
 
 /* ---- PDF lampiran ---- */
+const TAHUN = 2026;
+const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+const blnS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+function due(m, day){ const mm=(m+1)%12, yy = m===11 ? TAHUN+1 : TAHUN; return day + ' ' + blnS[mm] + ' ' + yy; }
+
 const PHOTO = (document.querySelector('img.avatar')||{}).src || '';
 const plain = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
 const plainS = n => (n<0?'-':'') + plain(Math.abs(n));
@@ -469,7 +494,7 @@ function para(c, t, size=9){ c.d.setFont('helvetica','normal'); c.d.setFontSize(
 function footer(c){
   const n = c.d.getNumberOfPages();
   for (let i=1;i<=n;i++){ c.d.setPage(i); c.d.setFont('helvetica','normal'); c.d.setFontSize(8); c.d.setTextColor(120,130,135);
-    c.d.text('Dasar: PP 58/2023, PMK 168/2023, UU HPP, PTKP PMK 101/2016. Perkiraan; bukan bukti potong resmi.', c.M, 290);
+    c.d.text('Disusun dengan kalkulator Hitung PPh 21 bersama Pak Yendi. Perkiraan; bukan bukti potong resmi.', c.M, 290);
     c.d.text('Hal. '+i+'/'+n, c.W-c.M, 290, {align:'right'}); }
 }
 async function savePdf(doc, filename, msgEl){
@@ -534,11 +559,28 @@ function buildOne(x){
     row(c, 'Sudah dipotong Jan-Nov (11 x ' + plain(r.terBulan) + ')', '-' + plain(r.terBulan*11));
     row(c, 'PPh 21 Desember', plainS(r.des), {bold:true, rule:true});
     c.y += 3;
-    h2(c, 'Jadwal potongan');
-    const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
-    bln.forEach((b,i) => row(c, b, i<11 ? plain(r.terBulan) : plainS(r.des), {small:true}));
+    h2(c, 'Penyetoran dan pelaporan');
+    row(c, 'Yang menyetor', 'Pemberi kerja (pemotong)');
+    row(c, 'Kode akun pajak - jenis setoran (KAP-KJS)', '411121-100', {bold:true});
+    row(c, 'Total yang disetor untuk penerima ini setahun', plain(r.setahun), {bold:true});
     c.y += 2;
-    para(c, 'Perhitungan memakai TER bulanan Lampiran PP 58/2023, tarif Pasal 17 UU HPP, PTKP PMK 101/2016, dan biaya jabatan 5% (maks. Rp 6.000.000 setahun). Asumsi: gaji sama setiap bulan selama setahun; belum termasuk bonus/THR, insentif PPh 21 DTP, atau masuk/keluar di tengah tahun. PPh 21 dipotong dan disetor pemberi kerja dan dicantumkan pada bukti potong 1721-A1.');
+    { const cols=[c.M, c.M+46, c.M+100, c.M+142]; c.d.setFontSize(8.5); c.d.setFont('helvetica','bold');
+      ['Masa pajak','Jumlah disetor','Setor paling lambat','Lapor SPT Masa paling lambat'].forEach((t,i)=>c.d.text(t, i===1? cols[1]+38 : cols[i], c.y, i===1?{align:'right'}:{}));
+      c.y += 1.8; c.d.setDrawColor(27,42,51); c.d.line(c.M, c.y, c.W-c.M, c.y); c.y += 4.4;
+      for (let m=0;m<12;m++){
+        if (c.y>278){ c.d.addPage(); c.y=20; }
+        const amt = m<11 ? r.terBulan : Math.max(0, r.des);
+        c.d.setFont('helvetica', m===11?'bold':'normal'); c.d.text(bln[m] + ' ' + TAHUN, cols[0], c.y);
+        c.d.setFont('courier', m===11?'bold':'normal'); c.d.text(plain(amt), cols[1]+38, c.y, {align:'right'});
+        c.d.setFont('helvetica','normal'); c.d.text(due(m,15), cols[2], c.y); c.d.text(due(m,20), cols[3], c.y);
+        c.y += 4.9;
+      }
+      c.d.setFont('helvetica','normal');
+    }
+    c.y += 2;
+    if (r.des<0) para(c, 'Masa Desember tidak ada setoran untuk penerima ini. Kelebihan potongan ' + plain(-r.des) + ' dikembalikan pemberi kerja kepada pegawai bersama gaji Desember.');
+    para(c, 'Cara setor: buat kode billing di Coretax DJP (coretaxdjp.pajak.go.id, menu Pembayaran > Layanan Mandiri Kode Billing) dengan KAP-KJS 411121-100 dan masa pajak sesuai bulan gaji, lalu bayar ke kas negara melalui bank/pos persepsi, internet/mobile banking, atau saldo Deposit Pajak. Laporkan lewat SPT Masa PPh 21/26 di Coretax: bukti potong BPMP untuk Januari-November dan BPA1 (dahulu 1721-A1) untuk Desember. Jika batas waktu jatuh pada hari libur, bergeser ke hari kerja berikutnya.');
+    para(c, 'Perhitungan memakai TER bulanan Lampiran PP 58/2023, tarif Pasal 17 UU HPP, PTKP PMK 101/2016, biaya jabatan 5% (maks. Rp 6.000.000 setahun), dan batas setor/lapor PMK 81/2024. Asumsi: gaji sama setiap bulan selama setahun; belum termasuk bonus/THR, insentif PPh 21 DTP, atau masuk/keluar di tengah tahun.');
   } else {
     const r = x.r;
     h2(c, 'Ringkasan');
@@ -553,13 +595,16 @@ function buildOne(x){
     r.layers.forEach(l => row(c, pctP(l.r) + ' x ' + plain(l.span), plain(l.tax), {indent:true, muted:true, small:true}));
     row(c, 'PPh 21 terutang', plain(r.tax), {bold:true, rule:true});
     c.y += 2;
+    c.y += 2;
+    h2(c, 'Penyetoran dan pelaporan');
+    row(c, 'Yang menyetor', 'Pemberi honor (pemotong)');
+    row(c, 'Jumlah yang disetor', plain(r.tax), {bold:true});
+    row(c, 'Kode akun pajak - jenis setoran (KAP-KJS)', '411121-100', {bold:true});
+    row(c, 'Setor paling lambat', 'tgl 15 bulan berikutnya');
+    row(c, 'Lapor SPT Masa PPh 21/26 paling lambat', 'tgl 20 bulan berikutnya');
+    para(c, 'Pemberi honor membuat kode billing di Coretax DJP (coretaxdjp.pajak.go.id, menu Pembayaran > Layanan Mandiri Kode Billing) dengan KAP-KJS 411121-100 dan masa pajak sesuai bulan pembayaran honor, lalu membayar ke kas negara melalui bank/pos persepsi, internet/mobile banking, atau Deposit Pajak. Penerima mendapat bukti potong BP21 dan mencantumkannya di SPT Tahunan. Jika batas waktu jatuh pada hari libur, bergeser ke hari kerja berikutnya.');
     para(c, 'Berlaku untuk bukan pegawai (narasumber, konsultan, tenaga ahli, freelancer). Dihitung per pembayaran, tidak diakumulasi antar bulan, tanpa PTKP.');
   }
-  c.y += 6;
-  if (c.y > 255){ c.d.addPage(); c.y = 30; }
-  c.d.setFont('helvetica','normal'); c.d.setFontSize(10);
-  c.d.text('Disusun dengan kalkulator Hitung PPh 21 bersama Pak Yendi,', c.W-c.M, c.y, {align:'right'}); c.y += 5;
-  c.d.text(tgl() + '.', c.W-c.M, c.y, {align:'right'});
   footer(c);
   return c.d;
 }
