@@ -1,0 +1,611 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Hitung PPh 21 bersama Pak Yendi</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: form card on the left, live result "bukti hitung" on the right; stacks on phones. Ledger-paper feel for the result. */
+:root{
+  --bg:#F3F1EA;
+  --paper:#FFFFFF;
+  --ink:#1B2A33;
+  --ink-soft:#5A6A72;
+  --line:#DCD8CC;
+  --teal:#0F5C5C;
+  --teal-soft:#E3EFEC;
+  --amber:#B8741A;
+  --amber-soft:#FBEFD9;
+  --good:#2E7D4F;
+  --bad:#B23A2B;
+  --font:"Plus Jakarta Sans","Segoe UI",system-ui,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"Cascadia Mono",Consolas,monospace;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#121A1E;--paper:#1A252B;--ink:#E6ECEE;--ink-soft:#9DB0B7;--line:#2C3A41;--teal:#5FC2B6;--teal-soft:#183331;--amber:#E2A24E;--amber-soft:#33281A;--good:#6CC48E;--bad:#EE8A7C;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#121A1E;--paper:#1A252B;--ink:#E6ECEE;--ink-soft:#9DB0B7;--line:#2C3A41;--teal:#5FC2B6;--teal-soft:#183331;--amber:#E2A24E;--amber-soft:#33281A;--good:#6CC48E;--bad:#EE8A7C;color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font);font-size:15px;line-height:1.55}
+.wrap{max-width:1140px;margin:0 auto;padding-inline:16px;padding-block:24px 48px}
+h1,h2,h3{margin:0;text-wrap:balance;line-height:1.2}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums}
+button,input,select{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--amber);outline-offset:2px}
+
+header.top{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:20px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--teal)}
+header h1{font-size:clamp(26px,4vw,38px);font-weight:800;letter-spacing:-.01em}
+header h1 .with{color:var(--teal)}
+.brand{display:flex;gap:16px;align-items:center}
+.avatar{flex:none;border-radius:14px;object-fit:cover;max-width:none}
+.brand .avatar{box-shadow:0 0 0 3px var(--paper),0 0 0 4px var(--line)}
+.byline{font-size:13px;font-weight:600;color:var(--amber);margin-top:4px}
+.credit{margin-top:24px;display:flex;gap:14px;align-items:center;background:var(--teal-soft);border:1px solid var(--line);border-radius:16px;padding:14px 18px;font-size:14px}
+
+@media (max-width:520px){.brand{align-items:flex-start}.brand .avatar{width:56px;height:70px}}
+header p{margin:6px 0 0;color:var(--ink-soft);max-width:60ch}
+.reg{font-size:12px;color:var(--ink-soft);border:1px solid var(--line);border-radius:999px;padding:6px 12px;background:var(--paper)}
+
+.grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.15fr);gap:20px;align-items:start}
+.card{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:clamp(18px,2.6vw,28px)}
+.form{display:flex;flex-direction:column;gap:18px}
+.seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:var(--bg);padding:5px;border-radius:14px}
+.seg button{border:0;background:transparent;border-radius:10px;padding:10px 8px;font-weight:600;color:var(--ink-soft);cursor:pointer;line-height:1.3}
+.seg button small{display:block;font-weight:500;font-size:12px}
+.seg button[aria-pressed="true"]{background:var(--paper);color:var(--teal);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{font-size:13px;font-weight:600}
+.field .hint{font-size:12px;color:var(--ink-soft)}
+.field .hint.err{color:var(--bad);font-weight:600}
+.field input,.field select{border:1.5px solid var(--line);background:var(--paper);border-radius:12px;padding:11px 13px;width:100%}
+.field input.invalid{border-color:var(--bad)}
+.money{position:relative}
+.money span{position:absolute;left:13px;top:50%;transform:translateY(-50%);color:var(--ink-soft);font-weight:600}
+.money input{padding-left:42px;font-family:var(--mono);font-size:17px}
+.row2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+details{border-top:1px dashed var(--line);padding-top:12px}
+summary{cursor:pointer;font-weight:600;font-size:14px;color:var(--teal)}
+details .field{margin-top:12px}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.primary{background:var(--teal);color:#fff;border:0;border-radius:12px;padding:13px 20px;font-weight:700;cursor:pointer}
+:root[data-theme="dark"] .primary{color:#0D1A1A}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .primary{color:#0D1A1A}}
+.ghost{background:transparent;border:1.5px solid var(--line);border-radius:12px;padding:12px 16px;font-weight:600;cursor:pointer}
+.ghost:hover{border-color:var(--teal)}
+.privacy{font-size:12px;color:var(--ink-soft);background:var(--teal-soft);border-radius:10px;padding:10px 12px}
+
+/* result */
+.slip{display:flex;flex-direction:column;gap:18px}
+.who{display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;border-bottom:1px solid var(--line);padding-bottom:14px}
+.who b{font-size:18px}
+.who .meta{font-size:13px;color:var(--ink-soft)}
+.badge{align-self:flex-start;background:var(--amber-soft);color:var(--amber);font-weight:700;font-size:12px;border-radius:999px;padding:4px 10px}
+.kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.kpi{background:var(--bg);border-radius:12px;padding:12px}
+.kpi .k{font-size:12px;color:var(--ink-soft);font-weight:600}
+.kpi .v{font-family:var(--mono);font-size:clamp(16px,2vw,20px);font-weight:600;margin-top:2px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.kpi.main{background:var(--teal);color:#fff}
+.kpi.main .k{color:rgba(255,255,255,.8)}
+:root[data-theme="dark"] .kpi.main{color:#0D1A1A}
+:root[data-theme="dark"] .kpi.main .k{color:rgba(13,26,26,.75)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .kpi.main{color:#0D1A1A} :root:not([data-theme="light"]) .kpi.main .k{color:rgba(13,26,26,.75)}}
+h3{font-size:14px;font-weight:700;letter-spacing:.04em;text-transform:uppercase;color:var(--ink-soft)}
+.steps{width:100%;border-collapse:collapse;font-size:14px}
+.steps td{padding:7px 0;border-bottom:1px dotted var(--line);vertical-align:top}
+.steps td:last-child{text-align:right;font-family:var(--mono);white-space:nowrap;padding-left:12px}
+.steps tr.total td{font-weight:700;border-bottom:2px solid var(--ink)}
+.steps tr.sub td{color:var(--ink-soft)}
+.months{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+.m{border:1px solid var(--line);border-radius:10px;padding:8px 6px;text-align:center}
+.m .k{font-size:11px;color:var(--ink-soft);font-weight:600}
+.m .v{font-family:var(--mono);font-size:12px;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.m.des{border-color:var(--amber);background:var(--amber-soft)}
+.note{font-size:13px;color:var(--ink-soft);margin:0}
+.callout{border-radius:12px;padding:12px 14px;font-size:14px}
+.callout.refund{background:#E5F3EA;color:#1F5C38}
+:root[data-theme="dark"] .callout.refund{background:#17301F;color:#9EDDB4}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .callout.refund{background:#17301F;color:#9EDDB4}}
+.empty{color:var(--ink-soft);text-align:center;padding:40px 10px}
+
+/* roster */
+.roster{margin-top:20px}
+.tablewrap{overflow-x:auto}
+table.list{width:100%;border-collapse:collapse;font-size:14px;min-width:640px}
+table.list th{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);text-align:left;padding:8px;border-bottom:2px solid var(--line)}
+table.list td{padding:9px 8px;border-bottom:1px solid var(--line)}
+table.list td.r,table.list th.r{text-align:right;font-family:var(--mono)}
+table.list tfoot td{font-weight:700;border-bottom:0}
+.x{background:none;border:0;color:var(--bad);cursor:pointer;font-weight:700;padding:4px 8px}
+footer{margin-top:28px;font-size:12px;color:var(--ink-soft);display:flex;flex-direction:column;gap:4px}
+footer a{color:var(--teal)}
+
+@media (max-width:860px){.grid{grid-template-columns:minmax(0,1fr)}}
+@media (max-width:520px){.kpis{grid-template-columns:minmax(0,1fr)}.months{grid-template-columns:repeat(3,minmax(0,1fr))}.row2{grid-template-columns:minmax(0,1fr)}}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <img class="avatar" src="data:image/jpeg;base64,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" width="72" height="90" alt="Foto Pak Yendi">
+      <div>
+      <div class="eyebrow">Kalkulator PPh 21 · Tahun pajak 2026</div>
+      <h1>Hitung PPh 21 <span class="with">bersama Pak Yendi</span></h1>
+      <div class="byline">Disusun oleh Yendi Septiyendi, CTT · Certified Tax Technician (Brevet A&amp;B, ATPI)</div>
+      <p>Isi nama, NIK, status, dan gaji kotor bulanan. Potongan pajak per bulan, hitungan Desember, dan gaji bersih langsung muncul.</p>
+      </div>
+    </div>
+    <span class="reg">Dasar: PP 58/2023 · PMK 168/2023 · UU HPP</span>
+  </header>
+
+  <div class="grid">
+    <form class="card form" id="f" novalidate autocomplete="off">
+      <div class="seg" role="group" aria-label="Jenis penerima penghasilan">
+        <button type="button" data-mode="pegawai" aria-pressed="true">Karyawan tetap<small>dipotong perusahaan/badan</small></button>
+        <button type="button" data-mode="bukan" aria-pressed="false">Perorangan bukan pegawai<small>honor, jasa, freelance</small></button>
+      </div>
+
+      <div class="field">
+        <label for="nama">Nama lengkap</label>
+        <input id="nama" maxlength="60" placeholder="Contoh: Siti Aminah">
+        <span class="hint" id="namaHint">Sesuai KTP.</span>
+      </div>
+      <div class="field">
+        <label for="nik">NIK (16 digit)</label>
+        <input id="nik" class="num" inputmode="numeric" maxlength="19" placeholder="3276 0123 4567 0001">
+        <span class="hint" id="nikHint">Sejak 2024 NIK berfungsi sebagai NPWP.</span>
+      </div>
+      <div class="field" id="statusField">
+        <label for="status">Status PTKP</label>
+        <select id="status">
+          <option value="TK/0">TK/0 · Belum kawin, tanpa tanggungan</option>
+          <option value="TK/1">TK/1 · Belum kawin, 1 tanggungan</option>
+          <option value="TK/2">TK/2 · Belum kawin, 2 tanggungan</option>
+          <option value="TK/3">TK/3 · Belum kawin, 3 tanggungan</option>
+          <option value="K/0">K/0 · Kawin, tanpa tanggungan</option>
+          <option value="K/1">K/1 · Kawin, 1 tanggungan</option>
+          <option value="K/2">K/2 · Kawin, 2 tanggungan</option>
+          <option value="K/3">K/3 · Kawin, 3 tanggungan</option>
+        </select>
+        <span class="hint">Menentukan kategori TER dan PTKP. Tanggungan maksimal 3 orang.</span>
+      </div>
+      <div class="field">
+        <label for="gaji" id="gajiLabel">Gaji kotor per bulan</label>
+        <div class="money"><span>Rp</span><input id="gaji" inputmode="numeric" placeholder="10.000.000"></div>
+        <span class="hint" id="gajiHint">Gaji pokok + semua tunjangan, sebelum dipotong apa pun.</span>
+      </div>
+
+      <details id="extra">
+        <summary>Rincian tambahan (opsional)</summary>
+        <div class="field">
+          <label for="iuran">Iuran JHT + Jaminan Pensiun yang dipotong dari gaji, per bulan</label>
+          <div class="money"><span>Rp</span><input id="iuran" inputmode="numeric" placeholder="0"></div>
+          <span class="hint">Biasanya 2% (JHT) + 1% (JP) dari gaji. Mengurangi pajak di hitungan Desember.</span>
+        </div>
+        <div class="field">
+          <label for="zakat">Zakat lewat pemberi kerja, per bulan</label>
+          <div class="money"><span>Rp</span><input id="zakat" inputmode="numeric" placeholder="0"></div>
+          <span class="hint">Hanya zakat ke BAZNAS/LAZ resmi yang dipotong oleh pemberi kerja.</span>
+        </div>
+      </details>
+
+      <div class="btns">
+        <button class="primary" type="submit">Hitung pajak</button>
+        <button class="ghost" type="button" id="contoh">Isi contoh</button>
+      </div>
+      <p class="privacy">Data hanya dihitung di perangkat ini. Nama dan NIK tidak dikirim atau disimpan ke mana pun.</p>
+    </form>
+
+    <section class="card" aria-live="polite">
+      <div id="empty" class="empty">
+        <p><b>Hasil hitungan akan muncul di sini.</b></p>
+        <p class="note">Tekan "Isi contoh" untuk melihat contoh gaji Rp10.000.000 dengan status TK/0.</p>
+      </div>
+      <div id="out" class="slip" hidden></div>
+    </section>
+  </div>
+
+  <section class="card roster" id="rosterCard" hidden>
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px">
+      <h2 style="font-size:20px">Daftar perhitungan</h2>
+      <div class="btns"><button class="ghost" type="button" id="pdfAll">Unduh daftar PDF</button><button class="ghost" type="button" id="copyAll">Salin daftar</button><button class="ghost" type="button" id="clearAll">Kosongkan</button></div>
+    </div>
+    <p class="note" style="margin-bottom:10px">Untuk perusahaan atau bendahara: tambahkan beberapa orang untuk melihat total PPh 21 yang dipotong per bulan. Daftar hilang saat halaman ditutup.</p>
+    <div class="tablewrap">
+      <table class="list">
+        <thead><tr><th>Nama</th><th>NIK</th><th>Jenis</th><th>Status</th><th class="r">Bruto/bulan</th><th class="r">PPh 21 Jan–Nov</th><th class="r">PPh 21 Des</th><th></th></tr></thead>
+        <tbody id="rows"></tbody>
+        <tfoot><tr><td colspan="4">Total</td><td class="r" id="tBruto"></td><td class="r" id="tTer"></td><td class="r" id="tDes"></td><td></td></tr></tfoot>
+      </table>
+    </div>
+  </section>
+
+  <div class="credit">
+    <img class="avatar" src="data:image/jpeg;base64,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" width="56" height="70" alt="Foto Pak Yendi">
+    <div><b>Hitung PPh 21 bersama Pak Yendi</b> · Yendi Septiyendi, S.Kom., Gr., CTT<br>Pendampingan lapor SPT Tahunan & administrasi pajak sekolah/UMKM · Instagram <b>@pakyendi.id</b></div>
+  </div>
+  <footer>
+    <span>Kalkulator ini memakai tarif efektif rata-rata (TER) bulanan resmi dari Lampiran PP 58/2023, tarif Pasal 17 UU HPP, PTKP PMK 101/2016, dan biaya jabatan 5% (maksimal Rp6.000.000 setahun).</span>
+    <span>Hasil adalah perkiraan untuk penghasilan tetap yang sama setiap bulan selama setahun. Belum memperhitungkan bonus/THR, insentif PPh 21 DTP sektor tertentu, atau pegawai yang masuk/keluar di tengah tahun. Untuk kepastian, konsultasikan dengan konsultan pajak terdaftar.</span>
+  </footer>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script>
+(function(){
+"use strict";
+const $ = id => document.getElementById(id);
+const rp = n => 'Rp' + Math.round(n).toLocaleString('id-ID');
+const rpS = n => (n<0?'−':'') + rp(Math.abs(n));
+const parseRp = s => Number(String(s||'').replace(/[^0-9]/g,'')) || 0;
+const pct = r => (r*100).toLocaleString('id-ID',{maximumFractionDigits:2}) + '%';
+
+/* ---- Rules ---- */
+const PTKP = {'TK/0':54e6,'TK/1':58.5e6,'TK/2':63e6,'TK/3':67.5e6,'K/0':58.5e6,'K/1':63e6,'K/2':67.5e6,'K/3':72e6};
+const CAT = {'TK/0':'A','TK/1':'A','K/0':'A','TK/2':'B','TK/3':'B','K/1':'B','K/2':'B','K/3':'C'};
+// [upper bound inclusive, rate] — Lampiran PP 58/2023
+const TER = {
+ A:[[5.4e6,0],[5.65e6,.0025],[5.95e6,.005],[6.3e6,.0075],[6.75e6,.01],[7.5e6,.0125],[8.55e6,.015],[9.65e6,.0175],[10.05e6,.02],[10.35e6,.0225],[10.7e6,.025],[11.05e6,.03],[11.6e6,.035],[12.5e6,.04],[13.75e6,.05],[15.1e6,.06],[16.95e6,.07],[19.75e6,.08],[24.15e6,.09],[26.45e6,.10],[28e6,.11],[30.05e6,.12],[32.4e6,.13],[35.4e6,.14],[39.1e6,.15],[43.85e6,.16],[47.8e6,.17],[51.4e6,.18],[56.3e6,.19],[62.2e6,.20],[68.6e6,.21],[77.5e6,.22],[89e6,.23],[103e6,.24],[125e6,.25],[157e6,.26],[206e6,.27],[337e6,.28],[454e6,.29],[550e6,.30],[695e6,.31],[910e6,.32],[1.4e9,.33],[Infinity,.34]],
+ B:[[6.2e6,0],[6.5e6,.0025],[6.85e6,.005],[7.3e6,.0075],[9.2e6,.01],[10.75e6,.015],[11.25e6,.02],[11.6e6,.025],[12.6e6,.03],[13.6e6,.04],[14.95e6,.05],[16.4e6,.06],[18.45e6,.07],[21.85e6,.08],[26e6,.09],[27.7e6,.10],[29.35e6,.11],[31.45e6,.12],[33.95e6,.13],[37.1e6,.14],[41.1e6,.15],[45.8e6,.16],[49.5e6,.17],[53.8e6,.18],[58.5e6,.19],[64e6,.20],[71e6,.21],[80e6,.22],[93e6,.23],[109e6,.24],[129e6,.25],[163e6,.26],[211e6,.27],[374e6,.28],[459e6,.29],[555e6,.30],[704e6,.31],[957e6,.32],[1.405e9,.33],[Infinity,.34]],
+ C:[[6.6e6,0],[6.95e6,.0025],[7.35e6,.005],[7.8e6,.0075],[8.85e6,.01],[9.8e6,.0125],[10.95e6,.015],[11.2e6,.0175],[12.05e6,.02],[12.95e6,.03],[14.15e6,.04],[15.55e6,.05],[17.05e6,.06],[19.5e6,.07],[22.7e6,.08],[26.6e6,.09],[28.1e6,.10],[30.1e6,.11],[32.6e6,.12],[35.4e6,.13],[38.9e6,.14],[43e6,.15],[47.4e6,.16],[51.2e6,.17],[55.8e6,.18],[60.4e6,.19],[66.7e6,.20],[74.5e6,.21],[83.2e6,.22],[95.6e6,.23],[110e6,.24],[134e6,.25],[169e6,.26],[221e6,.27],[390e6,.28],[463e6,.29],[561e6,.30],[709e6,.31],[965e6,.32],[1.419e9,.33],[Infinity,.34]]
+};
+const P17 = [[60e6,.05],[250e6,.15],[500e6,.25],[5e9,.30],[Infinity,.35]];
+function terRate(cat, bruto){ for (const [up,r] of TER[cat]) if (bruto<=up) return r; return .34; }
+function pasal17(pkp){
+  let left=pkp, prev=0, tax=0; const layers=[];
+  for (const [up,r] of P17){ if (left<=0) break; const span=Math.min(left, up-prev); tax+=span*r; layers.push({span,r,tax:span*r}); left-=span; prev=up; }
+  return {tax, layers};
+}
+function calcPegawai(status, gaji, iuran, zakat){
+  const cat = CAT[status], rate = terRate(cat, gaji);
+  const terBulan = Math.floor(gaji*rate);
+  const bruto = gaji*12;
+  const bj = Math.min(bruto*0.05, 6e6);
+  const iuranTh = iuran*12, zakatTh = zakat*12;
+  const neto = bruto - bj - iuranTh - zakatTh;
+  const ptkp = PTKP[status];
+  const pkp = Math.max(0, Math.floor((neto-ptkp)/1000)*1000);
+  const p = pasal17(pkp);
+  const setahun = Math.floor(p.tax);
+  const des = setahun - terBulan*11;
+  return {cat, rate, terBulan, bruto, bj, iuranTh, zakatTh, neto, ptkp, pkp, layers:p.layers, setahun, des,
+          thpBulan: gaji - terBulan - iuran - zakat, thpDes: gaji - Math.max(0,des) - iuran - zakat};
+}
+function calcBukan(gaji){
+  const dpp = gaji*0.5;
+  const p = pasal17(dpp);
+  const tax = Math.floor(p.tax);
+  return {dpp, layers:p.layers, tax, eff: gaji? tax/gaji : 0, net: gaji - tax};
+}
+
+/* ---- UI ---- */
+let mode = 'pegawai';
+document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+  mode = b.dataset.mode;
+  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed', x===b));
+  $('statusField').hidden = mode!=='pegawai';
+  $('extra').hidden = mode!=='pegawai';
+  $('gajiLabel').textContent = mode==='pegawai' ? 'Gaji kotor per bulan' : 'Honor / imbalan bruto per pembayaran';
+  $('gajiHint').textContent = mode==='pegawai' ? 'Gaji pokok + semua tunjangan, sebelum dipotong apa pun.' : 'Jumlah kotor yang dibayarkan dalam satu kali pembayaran.';
+  if (!$('out').hidden) run(false);
+}));
+const fmtMoney = el => el.addEventListener('input',()=>{ const n=parseRp(el.value); el.value = n? n.toLocaleString('id-ID') : ''; });
+['gaji','iuran','zakat'].forEach(id=>fmtMoney($(id)));
+$('nik').addEventListener('input',()=>{ const d=$('nik').value.replace(/\D/g,'').slice(0,16); $('nik').value = d.replace(/(\d{4})(?=\d)/g,'$1 '); });
+const maskNik = n => n.slice(0,4)+' •••• •••• '+n.slice(12);
+
+function validate(){
+  const nama=$('nama').value.trim(), nik=$('nik').value.replace(/\D/g,''), gaji=parseRp($('gaji').value);
+  let ok=true;
+  const set=(el,hint,bad,msg,def)=>{ el.classList.toggle('invalid',bad); hint.classList.toggle('err',bad); hint.textContent = bad?msg:def; if(bad&&ok){el.focus(); ok=false;} };
+  set($('nama'),$('namaHint'),!nama,'Nama wajib diisi.','Sesuai KTP.');
+  set($('nik'),$('nikHint'),nik.length!==16,'NIK harus 16 digit angka.','Sejak 2024 NIK berfungsi sebagai NPWP.');
+  set($('gaji'),$('gajiHint'),gaji<=0,'Isi jumlah gaji/honor terlebih dahulu.', mode==='pegawai'?'Gaji pokok + semua tunjangan, sebelum dipotong apa pun.':'Jumlah kotor yang dibayarkan dalam satu kali pembayaran.');
+  return ok ? {nama,nik,gaji} : null;
+}
+
+let last=null;
+function run(focus=true){
+  const v = validate(); if (!v) return;
+  const out=$('out');
+  if (mode==='pegawai'){
+    const status=$('status').value, iuran=parseRp($('iuran').value), zakat=parseRp($('zakat').value);
+    const r = calcPegawai(status, v.gaji, iuran, zakat);
+    last = {mode, ...v, status, r};
+    const months = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov'];
+    out.innerHTML = `
+      <div class="who"><div><b>${esc(v.nama)}</b><div class="meta num">NIK ${maskNik(v.nik)}</div></div>
+        <span class="badge">Karyawan tetap · ${status} · TER kategori ${r.cat}</span></div>
+      <div class="kpis">
+        <div class="kpi main"><div class="k">PPh 21 per bulan (Jan–Nov)</div><div class="v">${rp(r.terBulan)}</div></div>
+        <div class="kpi"><div class="k">PPh 21 Desember</div><div class="v">${rpS(r.des)}</div></div>
+        <div class="kpi"><div class="k">Gaji bersih per bulan</div><div class="v">${rp(r.thpBulan)}</div></div>
+      </div>
+      ${r.des<0?`<div class="callout refund">Pajak yang dipotong Januari–November lebih besar dari pajak setahun. Kelebihan ${rp(-r.des)} dikembalikan pemberi kerja bersama gaji Desember.</div>`:''}
+      <div><h3>Potongan per bulan</h3>
+        <div class="months" style="margin-top:8px">${months.map(m=>`<div class="m"><div class="k">${m}</div><div class="v">${rp(r.terBulan)}</div></div>`).join('')}<div class="m des"><div class="k">Des</div><div class="v">${rpS(r.des)}</div></div></div>
+      </div>
+      <div><h3>Januari–November: tarif efektif (TER)</h3>
+        <table class="steps"><tbody>
+          <tr><td>Gaji kotor sebulan</td><td>${rp(v.gaji)}</td></tr>
+          <tr><td>Tarif TER kategori ${r.cat} untuk gaji ini</td><td>${pct(r.rate)}</td></tr>
+          <tr class="total"><td>PPh 21 per bulan = ${rp(v.gaji)} × ${pct(r.rate)}</td><td>${rp(r.terBulan)}</td></tr>
+        </tbody></table>
+      </div>
+      <div><h3>Desember: hitungan setahun (Pasal 17)</h3>
+        <table class="steps"><tbody>
+          <tr><td>Penghasilan bruto setahun (12 × gaji)</td><td>${rp(r.bruto)}</td></tr>
+          <tr><td>Biaya jabatan 5% (maks. Rp6.000.000)</td><td>−${rp(r.bj)}</td></tr>
+          ${r.iuranTh?`<tr><td>Iuran JHT + JP setahun</td><td>−${rp(r.iuranTh)}</td></tr>`:''}
+          ${r.zakatTh?`<tr><td>Zakat lewat pemberi kerja setahun</td><td>−${rp(r.zakatTh)}</td></tr>`:''}
+          <tr><td>Penghasilan neto setahun</td><td>${rp(r.neto)}</td></tr>
+          <tr><td>PTKP ${status}</td><td>−${rp(r.ptkp)}</td></tr>
+          <tr><td>Penghasilan kena pajak (dibulatkan ke bawah ribuan)</td><td>${rp(r.pkp)}</td></tr>
+          ${r.layers.map(l=>`<tr class="sub"><td>&nbsp;&nbsp;${pct(l.r)} × ${rp(l.span)}</td><td>${rp(l.tax)}</td></tr>`).join('')}
+          <tr><td>PPh 21 terutang setahun</td><td>${rp(r.setahun)}</td></tr>
+          <tr><td>Sudah dipotong Jan–Nov (11 × ${rp(r.terBulan)})</td><td>−${rp(r.terBulan*11)}</td></tr>
+          <tr class="total"><td>PPh 21 Desember</td><td>${rpS(r.des)}</td></tr>
+        </tbody></table>
+      </div>
+      <p class="note">Total PPh 21 setahun: <b class="num">${rp(r.setahun)}</b> (sekitar ${pct(r.bruto? r.setahun/r.bruto:0)} dari penghasilan bruto). Pajak ini dipotong dan disetor oleh perusahaan/badan pemberi kerja, lalu dicantumkan di bukti potong 1721-A1.</p>
+      <div class="btns"><button class="primary" type="button" id="addRow">Tambahkan ke daftar</button><button class="ghost" type="button" id="pdfOne">Unduh lampiran PDF</button><button class="ghost" type="button" id="copyOne">Salin ringkasan</button></div><p class="note" id="pdfMsg" role="status"></p>`;
+  } else {
+    const r = calcBukan(v.gaji);
+    last = {mode, ...v, status:'—', r};
+    out.innerHTML = `
+      <div class="who"><div><b>${esc(v.nama)}</b><div class="meta num">NIK ${maskNik(v.nik)}</div></div>
+        <span class="badge">Perorangan bukan pegawai</span></div>
+      <div class="kpis">
+        <div class="kpi main"><div class="k">PPh 21 dipotong</div><div class="v">${rp(r.tax)}</div></div>
+        <div class="kpi"><div class="k">Tarif efektif</div><div class="v">${pct(r.eff)}</div></div>
+        <div class="kpi"><div class="k">Diterima bersih</div><div class="v">${rp(r.net)}</div></div>
+      </div>
+      <div><h3>Cara hitung</h3>
+        <table class="steps"><tbody>
+          <tr><td>Honor / imbalan bruto</td><td>${rp(v.gaji)}</td></tr>
+          <tr><td>Dasar pemotongan = 50% × bruto</td><td>${rp(r.dpp)}</td></tr>
+          ${r.layers.map(l=>`<tr class="sub"><td>&nbsp;&nbsp;${pct(l.r)} × ${rp(l.span)}</td><td>${rp(l.tax)}</td></tr>`).join('')}
+          <tr class="total"><td>PPh 21 terutang</td><td>${rp(r.tax)}</td></tr>
+        </tbody></table>
+      </div>
+      <p class="note">Berlaku untuk bukan pegawai seperti narasumber, konsultan, tenaga ahli, atau freelancer (PMK 168/2023). Dihitung per pembayaran dan tidak diakumulasi antar bulan. Tidak memakai PTKP; kelebihan dapat diperhitungkan di SPT Tahunan.</p>
+      <div class="btns"><button class="primary" type="button" id="addRow">Tambahkan ke daftar</button><button class="ghost" type="button" id="pdfOne">Unduh lampiran PDF</button><button class="ghost" type="button" id="copyOne">Salin ringkasan</button></div><p class="note" id="pdfMsg" role="status"></p>`;
+  }
+  $('empty').hidden=true; out.hidden=false;
+  $('addRow').addEventListener('click', addRow);
+  $('copyOne').addEventListener('click', e=>copy(summary(last), e.currentTarget));
+  $('pdfOne').addEventListener('click', ()=>pdfOne(last));
+  if (focus && window.innerWidth<860) out.scrollIntoView({behavior:'smooth',block:'start'});
+}
+function esc(s){ return s.replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function summary(x){
+  if (!x) return '';
+  if (x.mode==='pegawai') return `Perhitungan PPh 21 — ${x.nama} (NIK ${maskNik(x.nik)})\nStatus ${x.status}, TER kategori ${x.r.cat}\nGaji kotor/bulan: ${rp(x.gaji)}\nPPh 21 Jan–Nov: ${rp(x.r.terBulan)}/bulan (TER ${pct(x.r.rate)})\nPPh 21 Desember: ${rpS(x.r.des)}\nPPh 21 setahun: ${rp(x.r.setahun)}\nGaji bersih/bulan: ${rp(x.r.thpBulan)}`;
+  return `Perhitungan PPh 21 bukan pegawai — ${x.nama} (NIK ${maskNik(x.nik)})\nBruto: ${rp(x.gaji)}\nPPh 21: ${rp(x.r.tax)} (50% × bruto × tarif Pasal 17)\nDiterima bersih: ${rp(x.r.net)}`;
+}
+function copy(text, btn){
+  const done=()=>{ const t=btn.textContent; btn.textContent='Tersalin'; setTimeout(()=>btn.textContent=t,1500); };
+  const fb=()=>{ const ta=document.createElement('textarea'); ta.value=text; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){} ta.remove(); };
+  try{ navigator.clipboard.writeText(text).then(done,fb); }catch(e){ fb(); }
+}
+
+/* roster (memory only) */
+const roster=[];
+function addRow(){
+  if (!last) return;
+  roster.push(JSON.parse(JSON.stringify(last)));
+  drawRoster();
+  $('rosterCard').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function drawRoster(){
+  $('rosterCard').hidden = roster.length===0;
+  let tb=0,tt=0,td=0;
+  $('rows').innerHTML = roster.map((x,i)=>{
+    const ter = x.mode==='pegawai'? x.r.terBulan : x.r.tax;
+    const des = x.mode==='pegawai'? x.r.des : x.r.tax;
+    tb+=x.gaji; tt+=ter; td+=des;
+    return `<tr><td>${esc(x.nama)}</td><td class="num">${maskNik(x.nik)}</td><td>${x.mode==='pegawai'?'Karyawan':'Bukan pegawai'}</td><td>${x.status}</td><td class="r">${rp(x.gaji)}</td><td class="r">${rp(ter)}</td><td class="r">${rpS(des)}</td><td><button class="x" type="button" data-i="${i}" aria-label="Hapus ${esc(x.nama)}">×</button></td></tr>`;
+  }).join('');
+  $('tBruto').textContent=rp(tb); $('tTer').textContent=rp(tt); $('tDes').textContent=rpS(td);
+  $('rows').querySelectorAll('.x').forEach(b=>b.addEventListener('click',()=>{ roster.splice(+b.dataset.i,1); drawRoster(); }));
+}
+$('clearAll').addEventListener('click',()=>{ roster.length=0; drawRoster(); });
+$('copyAll').addEventListener('click',e=>{
+  const lines = ['Nama\tNIK\tJenis\tStatus\tBruto/bulan\tPPh21 Jan-Nov\tPPh21 Des', ...roster.map(x=>[x.nama,maskNik(x.nik),x.mode==='pegawai'?'Karyawan':'Bukan pegawai',x.status,Math.round(x.gaji),x.mode==='pegawai'?x.r.terBulan:x.r.tax,x.mode==='pegawai'?x.r.des:x.r.tax].join('\t'))];
+  copy(lines.join('\n'), e.currentTarget);
+});
+
+$('f').addEventListener('submit',e=>{ e.preventDefault(); run(); });
+$('contoh').addEventListener('click',()=>{
+  $('nama').value='Contoh Karyawan'; $('nik').value='3276 0000 0000 0001';
+  $('gaji').value=(10000000).toLocaleString('id-ID'); $('status').value='TK/0';
+  if (mode!=='pegawai') document.querySelector('[data-mode="pegawai"]').click();
+  run(false);
+});
+
+/* ---- PDF lampiran ---- */
+const PHOTO = (document.querySelector('img.avatar')||{}).src || '';
+const plain = n => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+const plainS = n => (n<0?'-':'') + plain(Math.abs(n));
+const pctP = r => (r*100).toLocaleString('id-ID',{maximumFractionDigits:2}) + '%';
+const nikFmt = n => n.replace(/(\d{4})(?=\d)/g,'$1 ');
+function tgl(){ return new Date().toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}); }
+function slug(t){ return t.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'').slice(0,40) || 'wajib-pajak'; }
+function newDoc(){
+  const J = window.jspdf && window.jspdf.jsPDF; if (!J) return null;
+  const d = new J({unit:'mm', format:'a4'});
+  const W = 210, M = 18;
+  // header band
+  d.setFillColor(15,92,92); d.rect(0,0,W,30,'F');
+  if (PHOTO.startsWith('data:image')) { try{ d.addImage(PHOTO,'JPEG',M,5,16,20); }catch(e){} }
+  d.setTextColor(255,255,255); d.setFont('helvetica','bold'); d.setFontSize(15);
+  d.text('Hitung PPh 21 bersama Pak Yendi', M+21, 13);
+  d.setFont('helvetica','normal'); d.setFontSize(9);
+  d.text('Yendi Septiyendi, S.Kom., Gr., CTT  |  Certified Tax Technician (Brevet A&B, ATPI)  |  IG @pakyendi.id', M+21, 19);
+  d.text('Dicetak ' + tgl(), M+21, 24);
+  d.setTextColor(27,42,51);
+  return {d, W, M, y:40};
+}
+function h2(c, t){ c.d.setFont('helvetica','bold'); c.d.setFontSize(11); c.d.setTextColor(15,92,92); c.d.text(t.toUpperCase(), c.M, c.y); c.y+=2; c.d.setDrawColor(220,216,204); c.d.line(c.M, c.y, c.W-c.M, c.y); c.y+=6; c.d.setTextColor(27,42,51); }
+function row(c, label, val, opt={}){
+  if (c.y > 275){ c.d.addPage(); c.y = 20; }
+  c.d.setFont('helvetica', opt.bold?'bold':'normal'); c.d.setFontSize(opt.small?9:10);
+  if (opt.muted) c.d.setTextColor(90,106,114);
+  const lines = c.d.splitTextToSize(label, c.W-2*c.M-48);
+  c.d.text(lines, c.M+(opt.indent?4:0), c.y);
+  c.d.setFont('courier', opt.bold?'bold':'normal');
+  c.d.text(String(val), c.W-c.M, c.y, {align:'right'});
+  c.d.setTextColor(27,42,51);
+  c.y += 5.6*lines.length;
+  if (opt.rule){ c.d.setDrawColor(27,42,51); c.d.line(c.M, c.y-3.6, c.W-c.M, c.y-3.6); c.y+=1.5; }
+}
+function para(c, t, size=9){ c.d.setFont('helvetica','normal'); c.d.setFontSize(size); c.d.setTextColor(90,106,114); const ls=c.d.splitTextToSize(t, c.W-2*c.M); if (c.y+ls.length*4.2>285){c.d.addPage(); c.y=20;} c.d.text(ls, c.M, c.y); c.y+=ls.length*4.2+2; c.d.setTextColor(27,42,51); }
+function footer(c){
+  const n = c.d.getNumberOfPages();
+  for (let i=1;i<=n;i++){ c.d.setPage(i); c.d.setFont('helvetica','normal'); c.d.setFontSize(8); c.d.setTextColor(120,130,135);
+    c.d.text('Dasar: PP 58/2023, PMK 168/2023, UU HPP, PTKP PMK 101/2016. Perkiraan; bukan bukti potong resmi.', c.M, 290);
+    c.d.text('Hal. '+i+'/'+n, c.W-c.M, 290, {align:'right'}); }
+}
+async function savePdf(doc, filename, msgEl){
+  const blob = doc.output('blob');
+  const say = t => { if (msgEl) msgEl.textContent = t; };
+  try{
+    const dl = window.claude && window.claude.use ? await window.claude.use('downloads') : null;
+    if (dl){
+      try{ await dl.save({filename, data: blob}); say('PDF tersimpan: ' + filename); }
+      catch(e){ say(e && e.code==='declined' ? 'Unduhan dibatalkan.' : 'PDF tidak bisa diunduh di tampilan ini.'); }
+      return;
+    }
+  }catch(e){}
+  const url = URL.createObjectURL(blob); const a = document.createElement('a');
+  a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url), 4000);
+  say('PDF diunduh: ' + filename);
+}
+function identity(c, x){
+  h2(c, 'Identitas');
+  row(c, 'Nama', x.nama); row(c, 'NIK', nikFmt(x.nik));
+  row(c, 'Jenis penerima', x.mode==='pegawai' ? 'Karyawan tetap' : 'Bukan pegawai');
+  if (x.mode==='pegawai') row(c, 'Status PTKP / kategori TER', x.status + ' / ' + x.r.cat);
+  c.y += 3;
+}
+function pdfOne(x){
+  const msg = $('pdfMsg');
+  if (!x) return;
+  const d = buildOne(x); if (!d){ msg.textContent = 'Pembuat PDF belum termuat. Periksa koneksi internet lalu coba lagi.'; return; }
+  savePdf(d, 'Lampiran-PPh21-' + slug(x.nama) + '.pdf', msg);
+}
+function buildOne(x){
+  const c = newDoc(); if (!c) return null;
+  c.d.setFont('helvetica','bold'); c.d.setFontSize(16); c.d.text('Lampiran Perhitungan PPh Pasal 21', c.M, c.y); c.y += 6;
+  c.d.setFont('helvetica','normal'); c.d.setFontSize(10); c.d.setTextColor(90,106,114); c.d.text('Tahun pajak 2026', c.M, c.y); c.d.setTextColor(27,42,51); c.y += 10;
+  identity(c, x);
+  if (x.mode==='pegawai'){
+    const r = x.r;
+    h2(c, 'Ringkasan');
+    row(c, 'Gaji kotor per bulan', plain(x.gaji));
+    row(c, 'PPh 21 per bulan (Januari-November)', plain(r.terBulan), {bold:true});
+    row(c, 'PPh 21 Desember', plainS(r.des), {bold:true});
+    row(c, 'PPh 21 setahun', plain(r.setahun));
+    row(c, 'Gaji bersih per bulan (Jan-Nov)', plain(r.thpBulan));
+    if (r.des<0) para(c, 'Pajak Januari-November lebih besar dari pajak setahun. Kelebihan ' + plain(-r.des) + ' dikembalikan pemberi kerja bersama gaji Desember.');
+    c.y += 3;
+    h2(c, 'Januari-November: tarif efektif rata-rata (TER)');
+    row(c, 'Gaji kotor sebulan', plain(x.gaji));
+    row(c, 'Tarif TER kategori ' + r.cat, pctP(r.rate));
+    row(c, 'PPh 21 per bulan = ' + plain(x.gaji) + ' x ' + pctP(r.rate), plain(r.terBulan), {bold:true, rule:true});
+    c.y += 3;
+    h2(c, 'Desember: hitungan setahun (tarif Pasal 17)');
+    row(c, 'Penghasilan bruto setahun (12 x gaji)', plain(r.bruto));
+    row(c, 'Biaya jabatan 5% (maks. Rp 6.000.000)', '-' + plain(r.bj));
+    if (r.iuranTh) row(c, 'Iuran JHT + Jaminan Pensiun setahun', '-' + plain(r.iuranTh));
+    if (r.zakatTh) row(c, 'Zakat melalui pemberi kerja setahun', '-' + plain(r.zakatTh));
+    row(c, 'Penghasilan neto setahun', plain(r.neto));
+    row(c, 'PTKP ' + x.status, '-' + plain(r.ptkp));
+    row(c, 'Penghasilan kena pajak (dibulatkan ke bawah ribuan)', plain(r.pkp));
+    r.layers.forEach(l => row(c, pctP(l.r) + ' x ' + plain(l.span), plain(l.tax), {indent:true, muted:true, small:true}));
+    row(c, 'PPh 21 terutang setahun', plain(r.setahun));
+    row(c, 'Sudah dipotong Jan-Nov (11 x ' + plain(r.terBulan) + ')', '-' + plain(r.terBulan*11));
+    row(c, 'PPh 21 Desember', plainS(r.des), {bold:true, rule:true});
+    c.y += 3;
+    h2(c, 'Jadwal potongan');
+    const bln = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'];
+    bln.forEach((b,i) => row(c, b, i<11 ? plain(r.terBulan) : plainS(r.des), {small:true}));
+    c.y += 2;
+    para(c, 'Perhitungan memakai TER bulanan Lampiran PP 58/2023, tarif Pasal 17 UU HPP, PTKP PMK 101/2016, dan biaya jabatan 5% (maks. Rp 6.000.000 setahun). Asumsi: gaji sama setiap bulan selama setahun; belum termasuk bonus/THR, insentif PPh 21 DTP, atau masuk/keluar di tengah tahun. PPh 21 dipotong dan disetor pemberi kerja dan dicantumkan pada bukti potong 1721-A1.');
+  } else {
+    const r = x.r;
+    h2(c, 'Ringkasan');
+    row(c, 'Honor / imbalan bruto', plain(x.gaji));
+    row(c, 'PPh 21 dipotong', plain(r.tax), {bold:true});
+    row(c, 'Tarif efektif', pctP(r.eff));
+    row(c, 'Diterima bersih', plain(r.net));
+    c.y += 3;
+    h2(c, 'Cara hitung (PMK 168/2023)');
+    row(c, 'Honor / imbalan bruto', plain(x.gaji));
+    row(c, 'Dasar pemotongan = 50% x bruto', plain(r.dpp));
+    r.layers.forEach(l => row(c, pctP(l.r) + ' x ' + plain(l.span), plain(l.tax), {indent:true, muted:true, small:true}));
+    row(c, 'PPh 21 terutang', plain(r.tax), {bold:true, rule:true});
+    c.y += 2;
+    para(c, 'Berlaku untuk bukan pegawai (narasumber, konsultan, tenaga ahli, freelancer). Dihitung per pembayaran, tidak diakumulasi antar bulan, tanpa PTKP.');
+  }
+  c.y += 6;
+  if (c.y > 255){ c.d.addPage(); c.y = 30; }
+  c.d.setFont('helvetica','normal'); c.d.setFontSize(10);
+  c.d.text('Disusun dengan kalkulator Hitung PPh 21 bersama Pak Yendi,', c.W-c.M, c.y, {align:'right'}); c.y += 5;
+  c.d.text(tgl() + '.', c.W-c.M, c.y, {align:'right'});
+  footer(c);
+  return c.d;
+}
+function pdfAll(){
+  if (!roster.length) return;
+  const btn = $('pdfAll'); const d = buildAll();
+  if (!d){ btn.textContent = 'PDF belum termuat'; return; }
+  savePdf(d, 'Daftar-PPh21-' + new Date().toISOString().slice(0,10) + '.pdf', null).then(()=>{ btn.textContent='PDF diunduh'; setTimeout(()=>btn.textContent='Unduh daftar PDF',2000); });
+}
+function buildAll(){
+  const c = newDoc(); if (!c) return null;
+  c.d.setFont('helvetica','bold'); c.d.setFontSize(16); c.d.text('Daftar Perhitungan PPh Pasal 21', c.M, c.y); c.y += 10;
+  const cols = [ {t:'No',x:c.M}, {t:'Nama',x:c.M+8}, {t:'NIK',x:c.M+52}, {t:'Status',x:c.M+92}, {t:'Bruto/bulan',x:c.M+128,r:true}, {t:'PPh21 Jan-Nov',x:c.M+152,r:true}, {t:'PPh21 Des',x:c.W-c.M,r:true} ];
+  const head = ()=>{ c.d.setFont('helvetica','bold'); c.d.setFontSize(8.5); cols.forEach(k=>c.d.text(k.t,k.x,c.y,k.r?{align:'right'}:{})); c.y+=2; c.d.setDrawColor(27,42,51); c.d.line(c.M,c.y,c.W-c.M,c.y); c.y+=5; };
+  head();
+  let tb=0,tt=0,td=0;
+  roster.forEach((x,i)=>{
+    if (c.y>270){ c.d.addPage(); c.y=20; head(); }
+    const ter = x.mode==='pegawai'? x.r.terBulan : x.r.tax, des = x.mode==='pegawai'? x.r.des : x.r.tax;
+    tb+=x.gaji; tt+=ter; td+=des;
+    c.d.setFont('helvetica','normal'); c.d.setFontSize(8.5);
+    c.d.text(String(i+1), cols[0].x, c.y);
+    c.d.text(c.d.splitTextToSize(x.nama, 42)[0], cols[1].x, c.y);
+    c.d.setFont('courier','normal'); c.d.text(x.nik, cols[2].x, c.y);
+    c.d.setFont('helvetica','normal'); c.d.text(x.mode==='pegawai'? x.status : 'Bukan pegawai', cols[3].x, c.y);
+    c.d.setFont('courier','normal');
+    c.d.text(Math.round(x.gaji).toLocaleString('id-ID'), cols[4].x, c.y, {align:'right'});
+    c.d.text(Math.round(ter).toLocaleString('id-ID'), cols[5].x, c.y, {align:'right'});
+    c.d.text((des<0?'-':'')+Math.round(Math.abs(des)).toLocaleString('id-ID'), cols[6].x, c.y, {align:'right'});
+    c.y += 6;
+  });
+  c.d.setDrawColor(27,42,51); c.d.line(c.M,c.y-3.5,c.W-c.M,c.y-3.5); c.y+=1.5;
+  c.d.setFont('helvetica','bold'); c.d.text('Total', cols[1].x, c.y);
+  c.d.setFont('courier','bold');
+  c.d.text(Math.round(tb).toLocaleString('id-ID'), cols[4].x, c.y, {align:'right'});
+  c.d.text(Math.round(tt).toLocaleString('id-ID'), cols[5].x, c.y, {align:'right'});
+  c.d.text((td<0?'-':'')+Math.round(Math.abs(td)).toLocaleString('id-ID'), cols[6].x, c.y, {align:'right'});
+  c.y += 10;
+  para(c, 'Nilai dalam rupiah. Karyawan tetap: Jan-Nov memakai TER, Desember memakai hitungan setahun Pasal 17. Bukan pegawai: 50% x bruto x tarif Pasal 17 per pembayaran.');
+  footer(c);
+  return c.d;
+}
+
+$('pdfAll').addEventListener('click', pdfAll);
+window.__pph21 = {calcPegawai, calcBukan, terRate, buildOne, buildAll, get last(){return last;}, roster};
+})();
+</script>
+</body>
+</html>
