@@ -308,6 +308,11 @@ footer a{color:var(--teal)}
             <label for="bRugi">Kompensasi kerugian tahun sebelumnya</label>
             <div class="money"><span>Rp</span><input id="bRugi" inputmode="numeric" placeholder="0"></div>
           </div>
+          <div class="field" id="bHibahField" hidden>
+            <label for="bHibah">Sumbangan, hibah, zakat/infak yang diterima dan sudah termasuk dalam sisa lebih</label>
+            <div class="money"><span>Rp</span><input id="bHibah" inputmode="numeric" placeholder="0"></div>
+            <span class="hint">Bukan objek pajak bila tidak ada hubungan usaha, pekerjaan, atau kepemilikan dengan pemberi (UU PPh Pasal 4 ayat 3 huruf a; PMK 90/2020). Dikurangkan dari sisa lebih.</span>
+          </div>
           <div class="field" id="bTanamField">
             <label for="bTanam">Sisa lebih yang ditanam kembali ke sarana-prasarana pendidikan (≤ 4 tahun)</label>
             <div class="money"><span>Rp</span><input id="bTanam" inputmode="numeric" placeholder="0"></div>
@@ -763,7 +768,7 @@ function buildAll(){
 $('pdfAll').addEventListener('click', pdfAll);
 
 /* ================= PPh BADAN ================= */
-const JENIS = {PT:'PT', PTP:'PT Perorangan', CV:'CV', FIRMA:'Firma', KOP:'Koperasi', BUMDES:'BUMDes', YDIK:'Yayasan / lembaga pendidikan nirlaba', YLAIN:'Yayasan / perkumpulan'};
+const JENIS = {PT:'PT', PTP:'PT Perorangan', TBK:'PT Terbuka (Tbk)', CV:'CV', FIRMA:'Firma', KOP:'Koperasi', BUMDES:'BUMDes', YDIK:'Yayasan / lembaga pendidikan nirlaba', YLAIN:'Yayasan / perkumpulan'};
 // Hak PPh final UMKM 0,5% untuk tahun pajak 2026 (PP 55/2022 jo. PP 20/2026, berlaku 22 April 2026)
 function finalEligibility(jenis, th, omzet){
   const yrs = TAHUN - th; // tahun pajak ke-(yrs+1)
@@ -771,7 +776,7 @@ function finalEligibility(jenis, th, omzet){
   if (jenis==='PTP') return {ok:true, why:'PT Perorangan boleh memakai PPh final 0,5% tanpa batas waktu selama omzet ≤ Rp4,8 miliar (PP 20/2026).'};
   if (jenis==='KOP') return yrs<4 ? {ok:true, why:'Koperasi boleh memakai PPh final 0,5% selama 4 tahun pajak sejak terdaftar (PP 20/2026). Tahun 2026 adalah tahun ke-'+(yrs+1)+'.'} : {ok:false, why:'Batas 4 tahun pajak sejak terdaftar untuk koperasi sudah lewat. Periksa ketentuan peralihan PP 20/2026 bila koperasi terdaftar 2021–2025.'};
   if (jenis==='YDIK' || jenis==='YLAIN') return {ok:false, why:'Yayasan dan perkumpulan tidak termasuk wajib pajak yang boleh memakai PPh final UMKM.'};
-  const lim = jenis==='PT' ? 3 : 4;
+  const lim = (jenis==='PT'||jenis==='TBK') ? 3 : 4;
   if (th >= TAHUN) return {ok:false, why:JENIS[jenis]+' yang terdaftar setelah PP 20/2026 berlaku (22 April 2026) tidak lagi mendapat PPh final 0,5%. Jika terdaftar sebelum tanggal itu, pilih skema final secara manual.'};
   return yrs<lim ? {ok:true, why:JENIS[jenis]+' yang terdaftar sebelum PP 20/2026 masih boleh memakai sisa jangka waktu PP 55/2022 ('+lim+' tahun pajak sejak terdaftar). Tahun 2026 adalah tahun ke-'+(yrs+1)+'.'}
                  : {ok:false, why:'Jangka waktu '+lim+' tahun pajak PPh final untuk '+JENIS[jenis]+' sudah habis, jadi memakai tarif umum.'};
@@ -783,20 +788,22 @@ function calcBadan(v){
     const tax = Math.floor(v.omzet*0.005);
     return {skema, elig, tax, perBulan: Math.floor(v.omzet/12*0.005)};
   }
-  const fiskal = v.laba + v.korPos - v.korNeg - v.rugi - (v.jenis==='YDIK'? v.tanam : 0);
+  const yys = v.jenis==='YDIK'||v.jenis==='YLAIN';
+  const fiskal = v.laba + v.korPos - v.korNeg - v.rugi - (v.jenis==='YDIK'? v.tanam : 0) - (yys? (v.hibah||0) : 0);
   const pkp = Math.max(0, Math.floor(fiskal/1000)*1000);
-  let pkpFas = 0, note;
-  if (v.omzet <= 4.8e9){ pkpFas = pkp; note='Omzet ≤ Rp4,8 miliar: seluruh PKP mendapat diskon tarif 50% (efektif 11%).'; }
+  let pkpFas = 0, note, rFull = 0.22;
+  if (v.jenis==='TBK'){ rFull = 0.19; note='PT Terbuka yang memenuhi syarat (≥40% saham disetor diperdagangkan di BEI, dimiliki ≥300 pihak yang masing-masing <5%, selama ≥183 hari setahun) memakai tarif 19% (22% − 3%) atas seluruh PKP, sesuai UU HPP dan PP 55/2022. Pemenuhan syarat dilaporkan dengan lampiran SPT dari Biro Administrasi Efek. Aplikasi tidak menggabungkannya dengan fasilitas Pasal 31E.'; }
+  else if (v.omzet <= 4.8e9){ pkpFas = pkp; note='Omzet ≤ Rp4,8 miliar: seluruh PKP mendapat diskon tarif 50% (efektif 11%).'; }
   else if (v.omzet <= 50e9){ pkpFas = Math.floor(4.8e9/v.omzet*pkp); note='Omzet Rp4,8–50 miliar: bagian PKP sebanding Rp4,8 miliar/omzet mendapat tarif 11%, sisanya 22%.'; }
   else note='Omzet di atas Rp50 miliar: seluruh PKP kena tarif 22%.';
-  const tax = Math.floor(pkpFas*0.11 + (pkp-pkpFas)*0.22);
+  const tax = Math.floor(pkpFas*0.11 + (pkp-pkpFas)*rFull);
   const kredit = v.p22+v.p23+v.p24+v.p25;
   const pph29 = tax - kredit;
   const pph25 = Math.max(0, Math.floor((tax - v.p22 - v.p23 - v.p24)/12));
-  return {skema, elig, fiskal, pkp, pkpFas, note, tax, kredit, pph29, pph25};
+  return {skema, elig, fiskal, pkp, pkpFas, rFull, note, tax, kredit, pph29, pph25};
 }
 const GRUP = {
-  PER:{opts:[['PT','PT (perseroan terbatas)'],['PTP','PT Perorangan']], nama:'Nama perusahaan', ph:'Contoh: PT Maju Bersama Nusantara', jenis:'Jenis perusahaan',
+  PER:{opts:[['PT','PT (perseroan terbatas)'],['PTP','PT Perorangan'],['TBK','PT Terbuka (Tbk) — tarif 19%']], nama:'Nama perusahaan', ph:'Contoh: PT Maju Bersama Nusantara', jenis:'Jenis perusahaan',
        omzet:'Peredaran bruto (omzet) setahun 2026', omzetHint:'Total penerimaan usaha sebelum dikurangi biaya.', laba:'Laba sebelum pajak menurut laporan keuangan', labaPh:'400.000.000'},
   CV:{opts:[['CV','CV (persekutuan komanditer)'],['FIRMA','Firma']], nama:'Nama CV / firma', ph:'Contoh: CV Sumber Rezeki', jenis:'Jenis persekutuan',
        omzet:'Peredaran bruto (omzet) setahun 2026', omzetHint:'Total penerimaan usaha sebelum dikurangi biaya.', laba:'Laba sebelum pajak menurut laporan keuangan', labaPh:'150.000.000'},
@@ -828,12 +835,13 @@ function bVal(){
   set($('bOmzet'),$('bOmzetHint'),omzet<=0,'Isi jumlah penerimaan setahun terlebih dahulu.',GRUP[grupOf($('bJenis').value)].omzetHint);
   if (!ok) return null;
   return {nama,npwp,th,omzet,jenis:$('bJenis').value,skema:$('bSkema').value,laba:parseRp($('bLaba').value)*(String($('bLaba').value).trim().startsWith('-')?-1:1),
-    korPos:parseRp($('bKorPos').value),korNeg:parseRp($('bKorNeg').value),rugi:parseRp($('bRugi').value),tanam:parseRp($('bTanam').value),
+    korPos:parseRp($('bKorPos').value),korNeg:parseRp($('bKorNeg').value),rugi:parseRp($('bRugi').value),tanam:parseRp($('bTanam').value),hibah:parseRp($('bHibah').value),
     p22:parseRp($('b22').value),p23:parseRp($('b23').value),p24:parseRp($('b24').value),p25:parseRp($('b25').value)};
 }
 function bSync(){
   const jenis=$('bJenis').value, th=Number($('bTahun').value)||0, omzet=parseRp($('bOmzet').value);
   $('bTanamField').hidden = jenis!=='YDIK';
+  $('bHibahField').hidden = !(jenis==='YDIK'||jenis==='YLAIN');
   let skema=$('bSkema').value;
   if (skema==='auto' && th && omzet){ const e=finalEligibility(jenis,th,omzet); $('bSkemaHint').textContent='Otomatis: '+(e.ok?'PPh final 0,5%':'tarif umum')+'. '+e.why; skema=e.ok?'final':'umum'; }
   else if (skema==='auto') $('bSkemaHint').textContent='Pilihan otomatis memakai jenis badan, tahun terdaftar, dan omzet.';
@@ -841,7 +849,7 @@ function bSync(){
   $('bUmum').hidden = skema==='final';
 }
 ['bJenis','bTahun','bOmzet','bSkema'].forEach(id=>$(id).addEventListener('input',bSync));
-['bOmzet','bKorPos','bKorNeg','bRugi','bTanam','b22','b23','b24','b25'].forEach(id=>fmtMoney($(id)));
+['bOmzet','bKorPos','bKorNeg','bRugi','bTanam','bHibah','b22','b23','b24','b25'].forEach(id=>fmtMoney($(id)));
 $('bLaba').addEventListener('input',()=>{ const neg=$('bLaba').value.trim().startsWith('-'); const n=parseRp($('bLaba').value); $('bLaba').value = n? (neg?'-':'')+n.toLocaleString('id-ID') : (neg?'-':''); });
 $('bNpwp').addEventListener('input',()=>{ const d=$('bNpwp').value.replace(/\D/g,'').slice(0,16); $('bNpwp').value=d.replace(/(\d{4})(?=\d)/g,'$1 '); });
 $('bTahun').addEventListener('input',()=>{ $('bTahun').value=$('bTahun').value.replace(/\D/g,'').slice(0,4); });
@@ -878,12 +886,13 @@ function runB(focus=true){
         ${v.korPos?`<tr><td>Koreksi fiskal positif</td><td>+${rp(v.korPos)}</td></tr>`:''}
         ${v.korNeg?`<tr><td>Koreksi fiskal negatif</td><td>−${rp(v.korNeg)}</td></tr>`:''}
         ${v.rugi?`<tr><td>Kompensasi kerugian</td><td>−${rp(v.rugi)}</td></tr>`:''}
+        ${((v.jenis==='YDIK'||v.jenis==='YLAIN')&&v.hibah)?`<tr><td>Sumbangan / hibah diterima (bukan objek)</td><td>−${rp(v.hibah)}</td></tr>`:''}
         ${(v.jenis==='YDIK'&&v.tanam)?`<tr><td>Sisa lebih ditanam kembali (bukan objek)</td><td>−${rp(v.tanam)}</td></tr>`:''}
         <tr><td>Penghasilan neto fiskal</td><td>${rpS(r.fiskal)}</td></tr>
         <tr class="total"><td>PKP (dibulatkan ke bawah ribuan)</td><td>${rp(r.pkp)}</td></tr></tbody></table></div>
-      <div><h3>PPh terutang (Pasal 17 & 31E)</h3><table class="steps"><tbody>
+      <div><h3>PPh terutang (${v.jenis==='TBK'?'Pasal 17 ayat 2b, tarif Tbk':'Pasal 17 & 31E'})</h3><table class="steps"><tbody>
         ${r.pkpFas?`<tr class="sub"><td>&nbsp;&nbsp;11% × ${rp(r.pkpFas)} (fasilitas)</td><td>${rp(r.pkpFas*0.11)}</td></tr>`:''}
-        ${r.pkp-r.pkpFas?`<tr class="sub"><td>&nbsp;&nbsp;22% × ${rp(r.pkp-r.pkpFas)}</td><td>${rp((r.pkp-r.pkpFas)*0.22)}</td></tr>`:''}
+        ${r.pkp-r.pkpFas?`<tr class="sub"><td>&nbsp;&nbsp;${r.rFull*100}% × ${rp(r.pkp-r.pkpFas)}</td><td>${rp((r.pkp-r.pkpFas)*r.rFull)}</td></tr>`:''}
         <tr><td>PPh Badan terutang</td><td>${rp(r.tax)}</td></tr>
         ${r.kredit?`<tr><td>Kredit pajak (PPh 22, 23, 24, 25)</td><td>−${rp(r.kredit)}</td></tr>`:''}
         ${due29}</tbody></table>
@@ -910,7 +919,7 @@ function buildBadan(x){
   c.d.setFont('helvetica','normal'); c.d.setFontSize(10); c.d.setTextColor(90,106,114); c.d.text('Tahun pajak '+TAHUN, c.M, c.y); c.d.setTextColor(27,42,51); c.y+=10;
   h2(c,'Identitas');
   row(c,'Nama badan',v.nama); row(c,'NPWP',nikFmt(v.npwp)); row(c,'Jenis badan',JENIS[v.jenis]); row(c,'Tahun terdaftar',String(v.th));
-  row(c,'Peredaran bruto setahun',plain(v.omzet)); row(c,'Skema', r.skema==='final'?'PPh final UMKM 0,5%':'Tarif umum (Pasal 17 & 31E)');
+  row(c,'Peredaran bruto setahun',plain(v.omzet)); row(c,'Skema', r.skema==='final'?'PPh final UMKM 0,5%':(v.jenis==='TBK'?'Tarif umum Tbk 19%':'Tarif umum (Pasal 17 & 31E)'));
   c.y+=1; para(c, r.elig.why); c.y+=2;
   if (r.skema==='final'){
     h2(c,'Perhitungan');
@@ -926,12 +935,13 @@ function buildBadan(x){
     if(v.korPos) row(c,'Koreksi fiskal positif','+'+plain(v.korPos));
     if(v.korNeg) row(c,'Koreksi fiskal negatif','-'+plain(v.korNeg));
     if(v.rugi) row(c,'Kompensasi kerugian','-'+plain(v.rugi));
+    if((v.jenis==='YDIK'||v.jenis==='YLAIN')&&v.hibah) row(c,'Sumbangan / hibah diterima (bukan objek)','-'+plain(v.hibah));
     if(v.jenis==='YDIK'&&v.tanam) row(c,'Sisa lebih ditanam kembali ke sarana-prasarana pendidikan (bukan objek)','-'+plain(v.tanam));
     row(c,'Penghasilan neto fiskal',plainS(r.fiskal));
     row(c,'Penghasilan kena pajak (dibulatkan ke bawah ribuan)',plain(r.pkp),{bold:true,rule:true});
-    c.y+=2; h2(c,'PPh terutang (Pasal 17 dan Pasal 31E)');
+    c.y+=2; h2(c, v.jenis==='TBK'?'PPh terutang (tarif perseroan terbuka 19%)':'PPh terutang (Pasal 17 dan Pasal 31E)');
     if(r.pkpFas) row(c,'11% x '+plain(r.pkpFas)+' (fasilitas Pasal 31E)',plain(r.pkpFas*0.11),{indent:true,small:true,muted:true});
-    if(r.pkp-r.pkpFas) row(c,'22% x '+plain(r.pkp-r.pkpFas),plain((r.pkp-r.pkpFas)*0.22),{indent:true,small:true,muted:true});
+    if(r.pkp-r.pkpFas) row(c,(r.rFull*100)+'% x '+plain(r.pkp-r.pkpFas),plain((r.pkp-r.pkpFas)*r.rFull),{indent:true,small:true,muted:true});
     row(c,'PPh Badan terutang',plain(r.tax),{bold:true});
     if(v.p22) row(c,'Kredit PPh 22',`-${plain(v.p22)}`); if(v.p23) row(c,'Kredit PPh 23',`-${plain(v.p23)}`);
     if(v.p24) row(c,'Kredit PPh 24',`-${plain(v.p24)}`); if(v.p25) row(c,'PPh 25 sudah dibayar',`-${plain(v.p25)}`);
@@ -943,7 +953,7 @@ function buildBadan(x){
     row(c,'Angsuran PPh 25 per bulan tahun '+(TAHUN+1),plain(r.pph25),{bold:true}); row(c,'KAP-KJS PPh 25','411126-100'); row(c,'Setor PPh 25 paling lambat','tgl 15 bulan berikutnya');
     para(c,'Cara setor: buat kode billing di Coretax DJP (coretaxdjp.pajak.go.id, menu Pembayaran > Layanan Mandiri Kode Billing), lalu bayar ke kas negara melalui bank/pos persepsi, internet/mobile banking, atau Deposit Pajak. Jika batas waktu jatuh pada hari libur, bergeser ke hari kerja berikutnya.' + (v.jenis==='YDIK'?' Lampirkan laporan penggunaan sisa lebih untuk sarana-prasarana pendidikan pada SPT Tahunan; sisa lebih yang tidak digunakan dalam 4 tahun menjadi objek pajak pada akhir tahun keempat.':''));
   }
-  c.y+=1; para(c,'Dasar: UU PPh Pasal 17 & 31E (UU HPP), PP 55/2022 jo. PP 20/2026, PMK 68/2020, PMK 81/2024. Belum memperhitungkan tarif khusus perusahaan terbuka, insentif lain, atau penghasilan final selain UMKM.');
+  c.y+=1; para(c,'Dasar: UU PPh Pasal 17 & 31E (UU HPP), PP 55/2022 jo. PP 20/2026, PMK 68/2020, PMK 90/2020, PMK 81/2024. Belum memperhitungkan insentif lain atau penghasilan final selain UMKM.');
   footer(c); return c.d;
 }
 $('fb').addEventListener('submit',e=>{e.preventDefault(); runB();});
