@@ -64,6 +64,8 @@ header p{margin:6px 0 0;color:var(--ink-soft);max-width:60ch}
 .seg{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:6px;background:var(--bg);padding:5px;border-radius:14px}
 .seg button{border:0;background:transparent;border-radius:10px;padding:10px 8px;font-weight:600;color:var(--ink-soft);cursor:pointer;line-height:1.3}
 .seg button small{display:block;font-weight:500;font-size:12px}
+.seg.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+@media (max-width:520px){.seg.g4{grid-template-columns:repeat(2,minmax(0,1fr))}}
 .seg button[aria-pressed="true"]{background:var(--paper);color:var(--teal);box-shadow:0 1px 3px rgba(0,0,0,.12)}
 .field{display:flex;flex-direction:column;gap:6px}
 .field label{font-size:13px;font-weight:600}
@@ -245,8 +247,17 @@ footer a{color:var(--teal)}
   <div class="grid">
     <form class="card form" id="fb" novalidate autocomplete="off">
       <div class="field">
-        <label for="bNama">Nama badan</label>
-        <input id="bNama" maxlength="80" placeholder="Contoh: Yayasan Sekolah Alam Nusantara">
+        <label>Bentuk badan</label>
+        <div class="seg g4" id="bGroup" role="group" aria-label="Bentuk badan">
+          <button type="button" data-grp="PER" aria-pressed="true">Perusahaan<small>PT</small></button>
+          <button type="button" data-grp="CV" aria-pressed="false">CV / Firma<small>persekutuan</small></button>
+          <button type="button" data-grp="YYS" aria-pressed="false">Yayasan<small>nirlaba</small></button>
+          <button type="button" data-grp="KOP" aria-pressed="false">Koperasi<small>/ BUMDes</small></button>
+        </div>
+      </div>
+      <div class="field">
+        <label for="bNama" id="bNamaLabel">Nama perusahaan</label>
+        <input id="bNama" maxlength="80" placeholder="Contoh: PT Maju Bersama Nusantara">
         <span class="hint" id="bNamaHint">Sesuai akta / NPWP.</span>
       </div>
       <div class="field">
@@ -256,17 +267,8 @@ footer a{color:var(--teal)}
       </div>
       <div class="row2">
         <div class="field">
-          <label for="bJenis">Jenis badan</label>
-          <select id="bJenis">
-            <option value="PT">PT (perseroan terbatas)</option>
-            <option value="PTP">PT Perorangan</option>
-            <option value="CV">CV</option>
-            <option value="FIRMA">Firma</option>
-            <option value="KOP">Koperasi</option>
-            <option value="BUMDES">BUMDes</option>
-            <option value="YDIK">Yayasan / lembaga pendidikan nirlaba</option>
-            <option value="YLAIN">Yayasan / perkumpulan lainnya</option>
-          </select>
+          <label for="bJenis" id="bJenisLabel">Jenis perusahaan</label>
+          <select id="bJenis"></select>
         </div>
         <div class="field">
           <label for="bTahun">Tahun terdaftar NPWP</label>
@@ -274,7 +276,7 @@ footer a{color:var(--teal)}
         </div>
       </div>
       <div class="field">
-        <label for="bOmzet">Peredaran bruto (omzet) setahun 2026</label>
+        <label for="bOmzet" id="bOmzetLabel">Peredaran bruto (omzet) setahun 2026</label>
         <div class="money"><span>Rp</span><input id="bOmzet" inputmode="numeric" placeholder="3.000.000.000"></div>
         <span class="hint" id="bOmzetHint">Total penerimaan usaha sebelum dikurangi biaya.</span>
       </div>
@@ -289,7 +291,7 @@ footer a{color:var(--teal)}
       </div>
       <div id="bUmum">
         <div class="field">
-          <label for="bLaba">Laba (sisa lebih) sebelum pajak menurut laporan keuangan</label>
+          <label for="bLaba" id="bLabaLabel">Laba sebelum pajak menurut laporan keuangan</label>
           <div class="money"><span>Rp</span><input id="bLaba" inputmode="numeric" placeholder="400.000.000"></div>
         </div>
         <details id="bExtra" style="margin-top:14px">
@@ -396,9 +398,9 @@ function calcBukan(gaji){
 
 /* ---- UI ---- */
 let mode = 'pegawai';
-document.querySelectorAll('.seg button').forEach(b=>b.addEventListener('click',()=>{
+document.querySelectorAll('.seg button[data-mode]').forEach(b=>b.addEventListener('click',()=>{
   mode = b.dataset.mode;
-  document.querySelectorAll('.seg button').forEach(x=>x.setAttribute('aria-pressed', x===b));
+  document.querySelectorAll('.seg button[data-mode]').forEach(x=>x.setAttribute('aria-pressed', x===b));
   $('statusField').hidden = mode!=='pegawai';
   $('extra').hidden = mode!=='pegawai';
   $('gajiLabel').textContent = mode==='pegawai' ? 'Gaji kotor per bulan' : 'Honor / imbalan bruto per pembayaran';
@@ -793,6 +795,29 @@ function calcBadan(v){
   const pph25 = Math.max(0, Math.floor((tax - v.p22 - v.p23 - v.p24)/12));
   return {skema, elig, fiskal, pkp, pkpFas, note, tax, kredit, pph29, pph25};
 }
+const GRUP = {
+  PER:{opts:[['PT','PT (perseroan terbatas)'],['PTP','PT Perorangan']], nama:'Nama perusahaan', ph:'Contoh: PT Maju Bersama Nusantara', jenis:'Jenis perusahaan',
+       omzet:'Peredaran bruto (omzet) setahun 2026', omzetHint:'Total penerimaan usaha sebelum dikurangi biaya.', laba:'Laba sebelum pajak menurut laporan keuangan', labaPh:'400.000.000'},
+  CV:{opts:[['CV','CV (persekutuan komanditer)'],['FIRMA','Firma']], nama:'Nama CV / firma', ph:'Contoh: CV Sumber Rezeki', jenis:'Jenis persekutuan',
+       omzet:'Peredaran bruto (omzet) setahun 2026', omzetHint:'Total penerimaan usaha sebelum dikurangi biaya.', laba:'Laba sebelum pajak menurut laporan keuangan', labaPh:'150.000.000'},
+  YYS:{opts:[['YDIK','Yayasan pendidikan (sekolah, pesantren, kursus)'],['YLAIN','Yayasan / perkumpulan lainnya']], nama:'Nama yayasan', ph:'Contoh: Yayasan Sekolah Alam Nusantara', jenis:'Bidang yayasan',
+       omzet:'Total penerimaan kegiatan setahun 2026 (SPP, uang pangkal, usaha)', omzetHint:'Tidak termasuk sumbangan/hibah yang bukan objek pajak.', laba:'Sisa lebih (surplus) sebelum pajak menurut laporan keuangan', labaPh:'400.000.000'},
+  KOP:{opts:[['KOP','Koperasi'],['BUMDES','BUMDes']], nama:'Nama koperasi / BUMDes', ph:'Contoh: Koperasi Guru Sejahtera', jenis:'Jenis badan',
+       omzet:'Peredaran bruto (omzet) setahun 2026', omzetHint:'Total penerimaan usaha sebelum dikurangi biaya.', laba:'Sisa hasil usaha (SHU) sebelum pajak', labaPh:'100.000.000'}
+};
+const labaNama = j => ({YDIK:'Sisa lebih',YLAIN:'Sisa lebih',KOP:'SHU',BUMDES:'Laba'}[j]||'Laba');
+const grupOf = j => Object.keys(GRUP).find(g=>GRUP[g].opts.some(o=>o[0]===j));
+function setGrup(g, jenis){
+  const G=GRUP[g];
+  document.querySelectorAll('#bGroup button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.grp===g));
+  $('bJenis').innerHTML = G.opts.map(o=>`<option value="${o[0]}">${o[1]}</option>`).join('');
+  if (jenis) $('bJenis').value = jenis;
+  $('bNamaLabel').textContent=G.nama; $('bNama').placeholder=G.ph; $('bJenisLabel').textContent=G.jenis;
+  $('bOmzetLabel').textContent=G.omzet; if(!$('bOmzetHint').classList.contains('err')) $('bOmzetHint').textContent=G.omzetHint;
+  $('bLabaLabel').textContent=G.laba; $('bLaba').placeholder=G.labaPh;
+  bSync(); if (lastB && !$('bOut').hidden) runB(false);
+}
+document.querySelectorAll('#bGroup button').forEach(b=>b.addEventListener('click',()=>setGrup(b.dataset.grp)));
 function bVal(){
   const nama=$('bNama').value.trim(), npwp=$('bNpwp').value.replace(/\D/g,''), th=Number($('bTahun').value)||0, omzet=parseRp($('bOmzet').value);
   let ok=true;
@@ -800,7 +825,7 @@ function bVal(){
   set($('bNama'),$('bNamaHint'),!nama,'Nama badan wajib diisi.','Sesuai akta / NPWP.');
   set($('bNpwp'),$('bNpwpHint'),npwp.length!==16,'NPWP badan harus 16 digit angka.','NPWP 16 digit yang dipakai di Coretax.');
   set($('bTahun'),null,!(th>=1950 && th<=TAHUN),'','');
-  set($('bOmzet'),$('bOmzetHint'),omzet<=0,'Isi omzet setahun terlebih dahulu.','Total penerimaan usaha sebelum dikurangi biaya.');
+  set($('bOmzet'),$('bOmzetHint'),omzet<=0,'Isi jumlah penerimaan setahun terlebih dahulu.',GRUP[grupOf($('bJenis').value)].omzetHint);
   if (!ok) return null;
   return {nama,npwp,th,omzet,jenis:$('bJenis').value,skema:$('bSkema').value,laba:parseRp($('bLaba').value)*(String($('bLaba').value).trim().startsWith('-')?-1:1),
     korPos:parseRp($('bKorPos').value),korNeg:parseRp($('bKorNeg').value),rugi:parseRp($('bRugi').value),tanam:parseRp($('bTanam').value),
@@ -849,7 +874,7 @@ function runB(focus=true){
       <div class="kpi"><div class="k">Angsuran PPh 25 / bulan ${TAHUN+1}</div><div class="v">${rp(r.pph25)}</div></div></div>
       <div class="warn">${esc(r.elig.why)}</div>
       <div><h3>Penghasilan kena pajak</h3><table class="steps"><tbody>
-        <tr><td>Laba (sisa lebih) komersial</td><td>${rpS(v.laba)}</td></tr>
+        <tr><td>${labaNama(v.jenis)} komersial</td><td>${rpS(v.laba)}</td></tr>
         ${v.korPos?`<tr><td>Koreksi fiskal positif</td><td>+${rp(v.korPos)}</td></tr>`:''}
         ${v.korNeg?`<tr><td>Koreksi fiskal negatif</td><td>−${rp(v.korNeg)}</td></tr>`:''}
         ${v.rugi?`<tr><td>Kompensasi kerugian</td><td>−${rp(v.rugi)}</td></tr>`:''}
@@ -897,7 +922,7 @@ function buildBadan(x){
     row(c,'Setor paling lambat','tgl 15 bulan berikutnya'); row(c,'SPT Tahunan PPh Badan paling lambat','30 April '+(TAHUN+1));
   } else {
     h2(c,'Penghasilan kena pajak');
-    row(c,'Laba (sisa lebih) komersial',plainS(v.laba));
+    row(c,labaNama(v.jenis)+' komersial',plainS(v.laba));
     if(v.korPos) row(c,'Koreksi fiskal positif','+'+plain(v.korPos));
     if(v.korNeg) row(c,'Koreksi fiskal negatif','-'+plain(v.korNeg));
     if(v.rugi) row(c,'Kompensasi kerugian','-'+plain(v.rugi));
@@ -923,7 +948,7 @@ function buildBadan(x){
 }
 $('fb').addEventListener('submit',e=>{e.preventDefault(); runB();});
 $('bContoh').addEventListener('click',()=>{
-  $('bNama').value='Contoh Yayasan Sekolah Alam'; $('bNpwp').value='0012 3456 7890 1000'; $('bJenis').value='YDIK'; $('bTahun').value='2018';
+  $('bNama').value='Contoh Yayasan Sekolah Alam'; $('bNpwp').value='0012 3456 7890 1000'; setGrup('YYS','YDIK'); $('bTahun').value='2018';
   $('bOmzet').value=(3e9).toLocaleString('id-ID'); $('bSkema').value='auto'; $('bLaba').value=(400e6).toLocaleString('id-ID');
   $('bTanam').value=(250e6).toLocaleString('id-ID'); $('b23').value=(2e6).toLocaleString('id-ID'); $('bExtra').open=true; bSync(); runB(false);
 });
@@ -941,7 +966,7 @@ function showTab(which){
 $('tabBtn21').addEventListener('click',()=>showTab('t21'));
 $('tabBtnB').addEventListener('click',()=>showTab('tb'));
 if (location.hash==='#badan') showTab('tb');
-bSync();
+setGrup('PER');
 
 window.__pph21 = {calcPegawai, calcBukan, terRate, buildOne, buildAll, calcBadan, finalEligibility, buildBadan, get last(){return last;}, get lastB(){return lastB;}, roster};
 })();
